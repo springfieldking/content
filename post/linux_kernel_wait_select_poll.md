@@ -23,7 +23,7 @@ kernel/kernel/sched/wait.c
 kernel/kernel/sched/core.c
 ```
 
-### 1.1.1 select调用堆栈
+### 1.1.1 select调用堆栈 poll_wait 流程
 ```c
 SYSCALL_DEFINE6(pselect6 ...) at linux/fs/select.c
 do_pselect at linux/fs/select.c 
@@ -38,7 +38,9 @@ sock_poll_wait at linux/include/net/sock.h
 poll_wait at linux/include/linux/poll.h
 ```
 
-### 1.1.2 socket write 流程
+### 1.1.2 select调用堆栈 poll_wake 流程
+
+
 
 
 
