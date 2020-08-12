@@ -76,8 +76,6 @@ static inline void __add_wait_queue(struct wait_queue_head *wq_head, struct wait
 	list_add(&wq_entry->entry, &wq_head->head);
 }
 
-
-
 ```
 
 ### 1.3.3 从队列移除
@@ -126,16 +124,17 @@ do {										\
 										\
 	init_wait_entry(&__wq_entry, exclusive ? WQ_FLAG_EXCLUSIVE : 0);	\
 	for (;;) {								\
+		// 检测当前进程是否待处理信号则返回__int非0 \
 		long __int = prepare_to_wait_event(&wq_head, &__wq_entry, state);\
 										\
 		if (condition)							\
 			break;							\
-										\
+		// 当有待处理信号且进程处于中断状态(TASK_INTERRUPTIBLE或TASK_KILLABLE)则跳出等待循环 \
 		if (___wait_is_interruptible(state) && __int) {			\
 			__ret = __int;						\
 			goto __out;						\
 		}								\
-										\
+		// 执行schedule()进入睡眠			\
 		cmd;								\
 	}									\
 	finish_wait(&wq_head, &__wq_entry);					\
@@ -152,19 +151,7 @@ long prepare_to_wait_event(struct wait_queue_head *wq_head, struct wait_queue_en
 	unsigned long flags;
 	long ret = 0;
 	spin_lock_irqsave(&wq_head->lock, flags);
-	if (signal_pending_state(state, current)) {
-		/*
-		 * Exclusive waiter must not fail if it was selected by wakeup,
-		 * it should "consume" the condition we were waiting for.
-		 *
-		 * The caller will recheck the condition and return success if
-		 * we were already woken up, we can not miss the event because
-		 * wakeup locks/unlocks the same wq_head->lock.
-		 *
-		 * But we need to ensure that set-condition + wakeup after that
-		 * can't see us, it should wake up another exclusive waiter if
-		 * we fail.
-		 */
+	if (signal_pending_state(state, current)) {	// 信号检测
 		list_del_init(&wq_entry->entry);
 		ret = -ERESTARTSYS;
 	} else {
